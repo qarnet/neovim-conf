@@ -39,3 +39,26 @@ luac.out
 *.x86_64
 *.hex
 
+# LazyVim / nvim
+tt.*
+.tests
+doc/tags
+debug
+.repro
+foo.*
+*.log
+data
+
+# Claude Code / WSL sandbox artifacts
+.bash_profile
+.bashrc
+.gitconfig
+.gitmodules
+.idea
+.mcp.json
+.profile
+.ripgreprc
+.vscode
+.zprofile
+.zshrc
+.claude
