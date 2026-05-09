@@ -62,3 +62,4 @@ data
 .zprofile
 .zshrc
 .claude
+claude_session.sh
