@@ -47,7 +47,7 @@ Reference for what's installed, organized by what it helps with.
 
 | Plugin | Key | When to use |
 |---|---|---|
-| **snacks.explorer** | `<leader>e` | File tree |
+| **snacks.explorer** | `<leader>e` | File tree. Auto-opens as left sidebar at startup and on project switch. |
 | **snacks.picker** | `<leader>ff` files, `<leader>sg` grep, `<leader>,` buffers, `<leader>fp` projects | Fuzzy finder. The four most-used keys in nvim. |
 | **grug-far.nvim** | `<leader>sr` | Project-wide find/replace UI. |
 | **snacks.dashboard** | startup screen | Recent files, project switcher. |
@@ -65,8 +65,7 @@ Reference for what's installed, organized by what it helps with.
 | Plugin | Key | What |
 |---|---|---|
 | **nvim-lspconfig** + **mason** | `gd` def, `gr` refs, `K` hover, `<leader>ca` code action, `<leader>cr` rename, `<leader>cd` line diagnostics | Language servers; Mason auto-installs them per language. |
-| **nvim-cmp** | `<Tab>` accept, `<C-Space>` open menu | Completion. |
-| **nvim-snippets** + friendly-snippets | (cmp menu) | Snippet expansion (Neovim 0.10+ built-in engine). |
+| **blink.cmp** | `<Tab>` accept, `<C-Space>` open menu, `:` and `/` cmdline completion | Completion engine; includes friendly-snippets snippet expansion. |
 | **conform.nvim** | `<leader>cf` or auto on save | Formatters: ruff (Python), clang-format (C/C++), prettier (web). |
 | **trouble.nvim** | `<leader>xx` | Diagnostics list — all errors/warnings in project. |
 | **todo-comments.nvim** | `<leader>st` | Highlights/lists TODO, FIXME, HACK comments. |
@@ -83,7 +82,7 @@ Reference for what's installed, organized by what it helps with.
 
 | Lang | LSP / tooling |
 |---|---|
-| C / C++ | clangd (with `--clang-tidy`, ESP32 query-driver), clang-format, codelldb (DAP) |
+| C / C++ | clangd (with `--clang-tidy`, query-driver for ESP32 xtensa+RISC-V, AVR, ARM/Zephyr), clang-format, codelldb (DAP). See `EMBEDDED.md` for cross-compile workflow. |
 | Python | basedpyright (LSP), ruff (lint + format), debugpy (DAP), neotest-python |
 | Rust | rustaceanvim, rust-analyzer, codelldb (DAP) |
 | CMake | cmake-language-server |
@@ -107,12 +106,20 @@ Reference for what's installed, organized by what it helps with.
 |---|---|---|
 | **edgy.nvim** | `<leader>ue` toggle, `<leader>uE` select | Pins sidebar plugins (Trouble, Aerial, Grug Far, Neotest, terminal) to consistent positions. |
 
-## Custom overrides (in `lua/plugins/`)
+## Custom overrides
+
+### `lua/plugins/`
 
 | File | Purpose |
 |---|---|
-| `lsp.lua` | Clangd config (ESP32 toolchain, clang-tidy) |
-| `formatters.lua` | Python → ruff, C/C++ → clang-format via conform |
-| `edgy.lua` | Registers Aerial as edgy right-side tenant |
-| `refactoring.lua` | Explicit `<leader>rf` (Extract Function), `<leader>rB` (Extract Block To File) |
-| `snacks-keys.lua` | `<leader>fp` → `Snacks.picker.projects()` |
+| `lsp.lua` | Clangd config: `--clang-tidy`, broad query-driver covering ESP32 (xtensa+RISC-V), AVR, ARM (`arm-none-eabi`), Zephyr (`arm-zephyr-eabi`) |
+| `formatters.lua` | Conform routing: Python → ruff, C/C++ → clang-format; Mason auto-installs clang-format |
+| `edgy.lua` | Registers Aerial as edgy right-side tenant (so Aerial + Grug Far don't fight for screen space) |
+| `refactoring.lua` | Adds missing `lewis6991/async.nvim` dependency; explicit `<leader>rf` (Extract Function) and `<leader>rB` (Extract Block To File) |
+| `snacks-keys.lua` | `<leader>fp` → `Snacks.picker.projects()` (replaces `util.project` keymap which only works with telescope/fzf-lua) |
+
+### `lua/config/`
+
+| File | Purpose |
+|---|---|
+| `autocmds.lua` | `VimEnter` + `DirChanged` hooks to auto-open Snacks.explorer at startup and on project switch |
