@@ -7,14 +7,29 @@
 -- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
 -- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
 
--- Auto-open Snacks.explorer as a left sidebar when nvim is started
--- with no args or with a directory.
+local function open_explorer()
+  vim.schedule(function()
+    local ft = vim.bo.filetype
+    if ft == "snacks_dashboard" or ft == "alpha" or ft == "starter" then
+      return
+    end
+    pcall(Snacks.explorer)
+  end)
+end
+
+-- Open Snacks.explorer as a left sidebar at startup
 vim.api.nvim_create_autocmd("VimEnter", {
   group = vim.api.nvim_create_augroup("user_explorer_autoopen", { clear = true }),
+  callback = open_explorer,
+})
+
+-- Re-open Snacks.explorer when switching projects (DirChanged on global scope)
+-- Triggers for: Snacks.picker.projects, dashboard "Projects" entry, :cd, persistence.nvim
+vim.api.nvim_create_autocmd("DirChanged", {
+  group = vim.api.nvim_create_augroup("user_explorer_on_dir_change", { clear = true }),
   callback = function()
-    local arg = vim.fn.argv(0)
-    if vim.fn.argc() == 0 or (arg and vim.fn.isdirectory(arg) == 1) then
-      Snacks.explorer()
+    if vim.v.event.scope == "global" then
+      open_explorer()
     end
   end,
 })
