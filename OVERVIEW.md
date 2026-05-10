@@ -48,7 +48,7 @@ Reference for what's installed, organized by what it helps with.
 | Plugin | Key | When to use |
 |---|---|---|
 | **snacks.explorer** | `<leader>e` open. Inside: `H` toggle hidden (dotfiles), `I` toggle ignored (gitignored), `u` refresh, `a` add, `d` delete, `r` rename, `m` move, `c` copy, `<CR>`/`l` open, `h` close dir. | File tree. Auto-opens as left sidebar at startup and on project switch. |
-| **snacks.picker** | `<leader>ff` files, `<leader>sg` grep, `<leader>,` buffers, `<leader>fp` projects | Fuzzy finder. The four most-used keys in nvim. |
+| **snacks.picker** | `<leader>ff` files, `<leader>sg` grep, `<leader>,` buffers, `<leader>fp` projects. Inside picker: `<A-h>` toggle hidden (dotfiles), `<A-i>` toggle ignored (gitignored). | Fuzzy finder. The four most-used keys in nvim. |
 | **grug-far.nvim** | `<leader>sr` | Project-wide find/replace UI. |
 | **snacks.dashboard** | startup screen | Recent files, project switcher. |
 
