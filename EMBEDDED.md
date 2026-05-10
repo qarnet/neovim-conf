@@ -173,6 +173,62 @@ LSP. There is nothing equivalent for nvim. Workflow: keep the upstream
 `Kconfig` files open in a split, use `:grep CONFIG_FOO` to find symbol
 definitions, or run `west build -t menuconfig` for browsing.
 
+## Build / flash / debug from inside nvim
+
+`lua/plugins/overseer.lua` registers task templates so you don't have to
+drop to a terminal for routine builds. Open the picker with `<leader>oo`:
+
+| Template | Runs |
+|---|---|
+| Zephyr: west build | `west build` |
+| Zephyr: west build (pristine) | `west build -p always` |
+| Zephyr: west flash | `west flash` |
+| Zephyr: west debug | `west debug` |
+| Zephyr: west update | `west update` |
+| Zephyr: menuconfig | `west build -t menuconfig` |
+| Zephyr: clean (rm build/) | `rm -rf build` |
+| PlatformIO: build | `pio run` |
+| PlatformIO: upload | `pio run -t upload` |
+| PlatformIO: compiledb | `pio run -t compiledb` |
+| PlatformIO: monitor | `pio device monitor` |
+| PlatformIO: clean | `pio run -t clean` |
+
+Templates are conditional: Zephyr templates only show when the project
+root has `.west/`, `west.yml`, or `CMakeLists.txt + prj.conf`. PlatformIO
+templates only show when `platformio.ini` is present. So opening
+`<leader>oo` in a non-embedded project doesn't drown you in irrelevant
+options.
+
+### Project-local environment activation
+
+Every templated command runs through:
+
+```bash
+bash -lc 'for f in .zephyrrc .envrc env.sh; do [ -f "$f" ] && . "$f" && break; done && <command>'
+```
+
+Drop a `.zephyrrc` (or `.envrc`, or `env.sh`) at the project root that
+exports `ZEPHYR_BASE`, `PATH`, and any toolchain vars. Overseer sources
+it automatically before running `west` / `pio`. Missing file is a no-op
+(the `[ -f ... ]` test skips). One file per project so different
+projects can pin different SDK versions / toolchains.
+
+Example `.zephyrrc`:
+
+```bash
+export ZEPHYR_BASE=$HOME/ncs/v3.3.0/zephyr
+export PATH="$HOME/ncs/v3.3.0/toolchain/bin:$PATH"
+. "$ZEPHYR_BASE/zephyr-env.sh"
+```
+
+Add `.zephyrrc` to `.gitignore` if it embeds machine-specific paths.
+
+### Watching task output
+
+`<leader>ow` opens the task list. Pick a running task to follow its
+output in a split. Failed tasks stay listed so you can re-run with the
+same parameters.
+
 ## Useful clangd commands inside nvim
 
 | Keymap / command | What |

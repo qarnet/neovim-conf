@@ -85,6 +85,7 @@ Reference for what's installed, organized by what it helps with.
 | C / C++ | clangd (with `--clang-tidy`, query-driver for ESP32 xtensa+RISC-V, AVR, ARM/Zephyr), clang-format, codelldb (DAP). See `EMBEDDED.md` for cross-compile workflow. |
 | Devicetree (`.dts`, `.dtsi`, `.overlay`) | `dts-lsp` (LSP), treesitter `devicetree` parser. `.overlay` auto-detected as `dts`. No formatter. See `EMBEDDED.md`. |
 | Kconfig (`Kconfig*`, `prj.conf`, Zephyr `boards/*.conf`) | Treesitter `kconfig` parser; nvim built-in `kconfig` ftplugin. No LSP, no formatter. See `EMBEDDED.md`. |
+| Linker scripts (`.ld`, `.lds`, `.x`) | Treesitter `linkerscript` parser; nvim built-in `ld` ftplugin. No LSP, no formatter. |
 | Python | basedpyright (LSP), ruff (lint + format), debugpy (DAP), neotest-python |
 | Rust | rustaceanvim, rust-analyzer, codelldb (DAP) |
 | CMake | cmake-language-server |
@@ -119,7 +120,8 @@ Reference for what's installed, organized by what it helps with.
 | `edgy.lua` | Registers Aerial as edgy right-side tenant (so Aerial + Grug Far don't fight for screen space) |
 | `refactoring.lua` | Adds missing `lewis6991/async.nvim` dependency; explicit `<leader>rf` (Extract Function) and `<leader>rB` (Extract Block To File) |
 | `snacks-keys.lua` | `<leader>fp` → `Snacks.picker.projects()` (replaces `util.project` keymap which only works with telescope/fzf-lua) |
-| `zephyr.lua` | Devicetree (`.dts`/`.dtsi`/`.overlay`) via `dts-lsp` + treesitter; Kconfig (`Kconfig*`, `prj.conf`, Zephyr `boards/*.conf`) via treesitter |
+| `zephyr.lua` | Devicetree (`.dts`/`.dtsi`/`.overlay`) via `dts-lsp` + treesitter; Kconfig (`Kconfig*`, `prj.conf`, Zephyr `boards/*.conf`) and linker scripts (`.ld`/`.lds`/`.x`) via treesitter |
+| `overseer.lua` | Task templates for `west build`/`flash`/`debug`/`update`/`menuconfig` and PlatformIO `run`/`upload`/`compiledb`/`monitor`; each command sources project-local `.zephyrrc` / `.envrc` / `env.sh` first |
 
 ### `lua/config/`
 

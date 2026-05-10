@@ -3,9 +3,10 @@
 -- Covers:
 --   * Devicetree (.dts, .dtsi, .overlay) — treesitter highlight + dts-lsp
 --   * Kconfig (Kconfig*, prj*.conf, boards/*.conf) — treesitter highlight only
+--   * Linker scripts (.ld, .lds, .x) — treesitter highlight, no LSP
 --
--- No formatter for either — none exist that don't destroy the source.
--- No LSP for Kconfig — nothing mature exists for nvim.
+-- No formatter for any — none exist that don't destroy the source.
+-- No LSP for Kconfig or linker scripts — nothing mature exists for nvim.
 return {
   {
     "neovim/nvim-lspconfig",
@@ -14,6 +15,10 @@ return {
       vim.filetype.add({
         extension = {
           overlay = "dts",
+          -- Linker scripts. nvim has built-in `ld` filetype; only `.ld`
+          -- is auto-detected upstream, so map `.lds` and `.x` too.
+          lds = "ld",
+          x = "ld",
         },
         filename = {
           ["prj.conf"] = "kconfig",
@@ -38,7 +43,7 @@ return {
     "nvim-treesitter/nvim-treesitter",
     opts = function(_, opts)
       opts.ensure_installed = opts.ensure_installed or {}
-      vim.list_extend(opts.ensure_installed, { "devicetree", "kconfig" })
+      vim.list_extend(opts.ensure_installed, { "devicetree", "kconfig", "linkerscript" })
     end,
   },
 
