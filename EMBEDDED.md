@@ -93,6 +93,27 @@ Common causes, checked in order:
 4. **Stale cache** — clangd caches in `~/.cache/clangd/index/`. Delete it if things look corrupted: `rm -rf ~/.cache/clangd/index/*`.
 5. **Wrong sysroot** — for Zephyr, `west build` sometimes points at the wrong toolchain after switching boards. `west update` and a clean rebuild fix it.
 
+## Browsing SDK sources from the project explorer
+
+snacks.explorer is single-root (it shows the project tree). To also reach SDK headers/sources (nRF Connect, ESP-IDF, Zephyr, Arduino cores) without leaving the sidebar, **symlink the SDK into the project**:
+
+```bash
+cd ~/your-project
+ln -s ~/ncs/v3.3.0 ncs-sdk          # nRF Connect SDK
+ln -s ~/.platformio/packages/framework-espidf esp-idf
+```
+
+Then add the symlink names to `.gitignore` so they're not committed:
+
+```
+ncs-sdk
+esp-idf
+```
+
+In nvim: press `u` inside the explorer to refresh. Symlinks appear as folders. clangd follows them for header resolution. `gd` (go to definition) jumps into SDK sources without extra setup.
+
+Drop the symlink when switching SDK versions; create a new one pointing at the new path. Per-project so different projects can pin different SDK versions.
+
 ## Useful clangd commands inside nvim
 
 | Keymap / command | What |
