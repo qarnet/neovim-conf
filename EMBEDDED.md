@@ -114,6 +114,65 @@ In nvim: press `u` inside the explorer to refresh. Symlinks appear as folders. c
 
 Drop the symlink when switching SDK versions; create a new one pointing at the new path. Per-project so different projects can pin different SDK versions.
 
+## Devicetree (`.dts`, `.dtsi`, `.overlay`)
+
+Zephyr / nRF Connect uses devicetree for board hardware description. This config
+provides:
+
+- **Filetype detection** — `.overlay` files are mapped to `dts` so the parser
+  and LSP attach automatically.
+- **Treesitter highlighting** — the `devicetree` parser handles syntax,
+  text-objects, and indent.
+- **LSP via `dts-lsp`** ([igor-prusov/dts-lsp](https://github.com/igor-prusov/dts-lsp)) —
+  completion, hover, go-to-definition, basic diagnostics. Installed by Mason.
+
+Wired up in `lua/plugins/zephyr.lua`.
+
+### Caveats
+
+- **No formatter.** There's no widely-adopted devicetree formatter (`dtc` doesn't
+  format, prettier/clang-format don't support `.dts`). Indent by hand, or rely
+  on treesitter-driven `=` indent.
+- **Bindings awareness is limited.** `dts-lsp` doesn't parse Zephyr bindings
+  (`.yaml` files in `dts/bindings/`), so it won't validate node properties
+  against bindings the way the Nordic VS Code extension does. For deep
+  validation, build with `west build` and check the generated
+  `build/zephyr/zephyr.dts` and any compile errors.
+- **Includes.** `dts-lsp` resolves `#include` paths via the file's directory and
+  any include paths the LSP picks up; for nRF Connect you usually want to open
+  nvim from the application directory so that `nrfx`, `zephyr/dts/...` etc.
+  resolve.
+
+## Kconfig (`Kconfig*`, `prj.conf`, board configs)
+
+Highlight only — no LSP, no formatter, no save-time linter. Configured in
+`lua/plugins/zephyr.lua`.
+
+Filetype detection:
+
+| File | Detected as |
+|---|---|
+| `Kconfig`, `Kconfig.<anything>` | `kconfig` (nvim built-in) |
+| `prj.conf` | `kconfig` |
+| `prj_<variant>.conf` (e.g. `prj_release.conf`) | `kconfig` |
+| `**/boards/**/*.conf` | `kconfig` |
+| `**/zephyr/**/*.conf` | `kconfig` |
+| Any other `*.conf` | unchanged (avoids hijacking generic `*.conf`) |
+
+If you have a Zephyr config fragment in a path the patterns don't catch
+(custom build layout, `overlay-feature.conf` at project root), set the
+filetype manually with `:set ft=kconfig` or extend the patterns in
+`lua/plugins/zephyr.lua`.
+
+### Why no LSP
+
+The Kconfig "language server" experience in VS Code (autocomplete for
+`CONFIG_` symbols, jump to definition, dependency hints) lives inside the
+Nordic / Microsoft Kconfig extensions and is not extracted as a standalone
+LSP. There is nothing equivalent for nvim. Workflow: keep the upstream
+`Kconfig` files open in a split, use `:grep CONFIG_FOO` to find symbol
+definitions, or run `west build -t menuconfig` for browsing.
+
 ## Useful clangd commands inside nvim
 
 | Keymap / command | What |
