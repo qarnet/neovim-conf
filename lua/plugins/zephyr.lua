@@ -46,15 +46,4 @@ return {
       vim.list_extend(opts.ensure_installed, { "devicetree", "kconfig", "linkerscript" })
     end,
   },
-
-  -- Belt-and-suspenders: mason-lspconfig should auto-install dts-lsp from the
-  -- servers table above, but pin it here so it's installed even if that path
-  -- breaks for any reason.
-  {
-    "williamboman/mason.nvim",
-    opts = function(_, opts)
-      opts.ensure_installed = opts.ensure_installed or {}
-      vim.list_extend(opts.ensure_installed, { "dts-lsp" })
-    end,
-  },
 }
