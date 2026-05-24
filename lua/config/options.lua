@@ -23,8 +23,16 @@ vim.g.clipboard = {
     ["+"] = osc52.copy("+"),
     ["*"] = osc52.copy("*"),
   },
+  -- OSC 52 paste requires the terminal to respond to a query escape sequence.
+  -- Most terminals have this disabled (security), causing Neovim to block/timeout.
+  -- Instead, read from the unnamed register (last yank). For content copied outside
+  -- Neovim, use Ctrl+Shift+V in insert mode or the terminal's native paste.
   paste = {
-    ["+"] = osc52.paste("+"),
-    ["*"] = osc52.paste("*"),
+    ["+"] = function()
+      return { vim.split(vim.fn.getreg('"'), "\n"), vim.fn.getregtype('"') }
+    end,
+    ["*"] = function()
+      return { vim.split(vim.fn.getreg('"'), "\n"), vim.fn.getregtype('"') }
+    end,
   },
 }
