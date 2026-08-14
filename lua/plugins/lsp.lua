@@ -10,10 +10,11 @@ return {
             "--clang-tidy",
             "--header-insertion=never",
             "--completion-style=detailed",
-            "--function-arg-placeholders",
+            "--function-arg-placeholders=true",
             "--all-scopes-completion",
             "--fallback-style=llvm",
             "--query-driver="
+              .. "/run/current-system/sw/bin/c++,"
               .. "**/xtensa-esp32-elf-*,"
               .. "**/xtensa-esp32s2-elf-*,"
               .. "**/xtensa-esp32s3-elf-*,"

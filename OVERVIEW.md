@@ -77,6 +77,7 @@ Reference for what's installed, organized by what it helps with.
 | **nvim-dap** + **dap-ui** | `<leader>db` toggle breakpoint, `<leader>dc` continue, `<leader>du` UI, `<leader>de` eval | Debugger. Adapters: codelldb (C/C++/Rust), debugpy (Python). |
 | **neotest** | `<leader>tt` file, `<leader>tr` nearest, `<leader>ts` summary | Test runner. Adapter: neotest-python. |
 | **overseer** | `<leader>oo` run task, `<leader>ow` task list | Generic task runner. |
+| **cmake-tools** | `<leader>cg` configure, `<leader>cG` clean cache + configure, `<leader>cb` build | CMake projects; build dir `build`; output runs as Overseer tasks. |
 
 ## Languages enabled
 
@@ -116,6 +117,7 @@ Reference for what's installed, organized by what it helps with.
 | File | Purpose |
 |---|---|
 | `lsp.lua` | Clangd config: `--clang-tidy`, broad query-driver covering ESP32 (xtensa+RISC-V), AVR, ARM (`arm-none-eabi`), Zephyr (`arm-zephyr-eabi`) |
+| `cmake.lua` | cmake-tools.nvim: relative `build` dir + Overseer executor; `<leader>cg` configure, `<leader>cG` clean cache + configure, `<leader>cb` build |
 | `formatters.lua` | Conform routing: Python → ruff, C/C++ → clang-format; Mason auto-installs clang-format |
 | `edgy.lua` | Registers Aerial as edgy right-side tenant (so Aerial + Grug Far don't fight for screen space) |
 | `refactoring.lua` | Adds missing `lewis6991/async.nvim` dependency; explicit `<leader>rf` (Extract Function) and `<leader>rB` (Extract Block To File) |
