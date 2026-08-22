@@ -1,13 +1,15 @@
-# Embedded / cross-compile workflow
+# Embedded cross-compilation
 
-How to make clangd useful for embedded projects (nRF Connect SDK, PlatformIO, Arduino, Zephyr).
+Use clangd with nRF Connect SDK, PlatformIO, Arduino, and Zephyr projects.
 
 ## What clangd needs
 
-Two things:
+clangd needs two inputs.
 
-1. **A toolchain it's allowed to query.**
-   Cross-compilers ship their own system headers. clangd has to invoke the compiler binary to learn where those headers live. For security, clangd only does this for binaries matching `--query-driver` globs.
+1. A toolchain clangd may query.
+   Cross-compilers ship their own system headers. clangd invokes the compiler to
+   locate them. For security, it only queries binaries that match
+   `--query-driver` globs.
    This config's globs (in `lua/plugins/lsp.lua`) cover:
 
    | Platform | Compiler |
@@ -18,14 +20,18 @@ Two things:
    | nRF / generic ARM | `arm-none-eabi-*` |
    | Zephyr SDK (nRF Connect default) | `arm-zephyr-eabi-*` |
 
-2. **A `compile_commands.json` at the project root** (or symlinked there).
-   This tells clangd the exact compile flags for each `.c`/`.cpp` file: include paths, `-D` defines, `-march`, sysroot, etc. Without it, every `<zephyr/...>`/`<Arduino.h>`/etc. is a red squiggle.
+2. A `compile_commands.json` at the project root, or a symlink to one.
+   It gives clangd the compile flags for every `.c` and `.cpp` file. Those flags
+   include paths, `-D` defines, `-march`, and the sysroot. Without it, clangd
+   cannot resolve headers such as `<zephyr/...>` and `<Arduino.h>`.
 
 If both are present, clangd resolves headers, expands macros, runs clang-tidy, and shows accurate diagnostics for embedded code.
 
 ## Generating `compile_commands.json` per platform
 
-### PlatformIO (Arduino, ESP32 via Espressif framework)
+### PlatformIO
+
+For Arduino and ESP32 projects using the Espressif framework:
 
 ```bash
 pio run -t compiledb
@@ -41,23 +47,27 @@ build_type = debug
 extra_scripts = post:scripts/copy_compiledb.py
 ```
 
-…or just remember to run `pio run -t compiledb` after structural changes.
+Otherwise, rerun `pio run -t compiledb` after structural changes.
 
-### nRF Connect SDK (Zephyr / west)
+### nRF Connect SDK and Zephyr
 
-`west build` generates `build/compile_commands.json` automatically. clangd needs it at the project root, so symlink once per project:
+`west build` generates `build/compile_commands.json`. clangd needs it at the
+project root, so symlink it once per project:
 
 ```bash
 ln -sf build/compile_commands.json compile_commands.json
 ```
 
-If you have multiple build dirs (e.g. `build_nrf52` and `build_nrf53`), pick one to symlink to, or relink before opening nvim:
+If the project has multiple build directories, choose one or relink before
+opening nvim:
 
 ```bash
 ln -sf build_nrf52/compile_commands.json compile_commands.json
 ```
 
-### Plain CMake (Tauri Rust crate's C deps, generic projects)
+### Plain CMake
+
+For a generic CMake project or C dependencies in a Tauri Rust crate:
 
 Add to your top-level `CMakeLists.txt`:
 
@@ -74,10 +84,12 @@ ln -sf build/compile_commands.json .
 
 ### Arduino IDE (no PlatformIO)
 
-Arduino's `.ino` workflow doesn't generate `compile_commands.json` natively. Two options:
+Arduino `.ino` projects do not generate `compile_commands.json`. Choose one:
 
-- **Migrate to PlatformIO** (recommended). PlatformIO supports the same boards and gets you proper IDE features.
-- Use the [`arduino-language-server`](https://github.com/arduino/arduino-language-server) instead of clangd for `.ino` files. Add to your config if you go this route.
+- Use PlatformIO if you want clangd support. It supports the same boards and
+  generates editor data.
+- Use the [`arduino-language-server`](https://github.com/arduino/arduino-language-server)
+  for `.ino` files instead of clangd. Add it to the config when needed.
 
 ## After regenerating
 
@@ -85,17 +97,24 @@ Run `:LspRestart` in nvim. clangd reloads with the new compile commands. Diagnos
 
 ## When clangd still doesn't see headers
 
-Common causes, checked in order:
+Check these in order.
 
-1. **No `compile_commands.json`** — verify it exists at project root (or via symlink).
-2. **`--query-driver` doesn't match the toolchain** — check `clangd --log=verbose` output. The compiler path needs to match one of the globs in `lua/plugins/lsp.lua`.
-3. **Toolchain installed somewhere unexpected** — globs are recursive (`**/`), but only against absolute paths. Check `which xtensa-esp32-elf-gcc` resolves and is reachable from the project's compile commands.
-4. **Stale cache** — clangd caches in `~/.cache/clangd/index/`. Delete it if things look corrupted: `rm -rf ~/.cache/clangd/index/*`.
-5. **Wrong sysroot** — for Zephyr, `west build` sometimes points at the wrong toolchain after switching boards. `west update` and a clean rebuild fix it.
+1. No `compile_commands.json`. Verify that it exists at the project root or is
+   symlinked there.
+2. The `--query-driver` glob misses the compiler. Check `clangd --log=verbose`.
+   The compiler path must match a glob in `lua/plugins/lsp.lua`.
+3. The compiler path falls outside the glob. Globs are recursive (`**/`) but
+   match absolute paths only. Check that `which xtensa-esp32-elf-gcc` resolves
+   and that the path appears in the compile commands.
+4. The clangd cache is stale. It lives in `~/.cache/clangd/index/`. If it is
+   corrupt, delete it with `rm -rf ~/.cache/clangd/index/*`.
+5. Zephyr uses the wrong sysroot. After switching boards, `west build` can
+   point at the wrong toolchain. Run `west update` and rebuild cleanly.
 
 ## Browsing SDK sources from the project explorer
 
-snacks.explorer is single-root (it shows the project tree). To also reach SDK headers/sources (nRF Connect, ESP-IDF, Zephyr, Arduino cores) without leaving the sidebar, **symlink the SDK into the project**:
+Snacks Explorer shows one project root. To browse SDK headers and source from
+the same sidebar, symlink the SDK into the project:
 
 ```bash
 cd ~/your-project
@@ -103,50 +122,50 @@ ln -s ~/ncs/v3.3.0 ncs-sdk          # nRF Connect SDK
 ln -s ~/.platformio/packages/framework-espidf esp-idf
 ```
 
-Then add the symlink names to `.gitignore` so they're not committed:
+Add the symlink names to `.gitignore` so Git does not track them:
 
 ```
 ncs-sdk
 esp-idf
 ```
 
-In nvim: press `u` inside the explorer to refresh. Symlinks appear as folders. clangd follows them for header resolution. `gd` (go to definition) jumps into SDK sources without extra setup.
+Press `u` inside the explorer to refresh. Symlinks appear as folders. clangd
+follows them for header resolution. `gd` jumps into SDK source.
 
-Drop the symlink when switching SDK versions; create a new one pointing at the new path. Per-project so different projects can pin different SDK versions.
+Replace the symlink when switching SDK versions. Keeping it in the project lets
+different projects use different SDK versions.
 
 ## Devicetree (`.dts`, `.dtsi`, `.overlay`)
 
-Zephyr / nRF Connect uses devicetree for board hardware description. This config
-provides:
+Zephyr and nRF Connect use devicetree for board hardware descriptions. This
+config provides:
 
-- **Filetype detection** — `.overlay` files are mapped to `dts` so the parser
-  and LSP attach automatically.
-- **Treesitter highlighting** — the `devicetree` parser handles syntax,
-  text-objects, and indent.
-- **LSP via `dts-lsp`** ([igor-prusov/dts-lsp](https://github.com/igor-prusov/dts-lsp)) —
-  completion, hover, go-to-definition, basic diagnostics. Installed by Mason.
+- Filetype detection maps `.overlay` files to `dts`, so the parser and LSP
+  attach.
+- The `devicetree` Treesitter parser handles syntax, text objects, and indent.
+- [`dts-lsp`](https://github.com/igor-prusov/dts-lsp) provides completion,
+  hover, go-to-definition, and basic diagnostics. Mason installs it.
 
-Wired up in `lua/plugins/zephyr.lua`.
+Filetype detection and `dts-lsp` live in `lua/plugins/zephyr.lua`; parser
+installation lives in `lua/plugins/treesitter.lua`.
 
 ### Caveats
 
-- **No formatter.** There's no widely-adopted devicetree formatter (`dtc` doesn't
-  format, prettier/clang-format don't support `.dts`). Indent by hand, or rely
-  on treesitter-driven `=` indent.
-- **Bindings awareness is limited.** `dts-lsp` doesn't parse Zephyr bindings
-  (`.yaml` files in `dts/bindings/`), so it won't validate node properties
-  against bindings the way the Nordic VS Code extension does. For deep
-  validation, build with `west build` and check the generated
-  `build/zephyr/zephyr.dts` and any compile errors.
-- **Includes.** `dts-lsp` resolves `#include` paths via the file's directory and
-  any include paths the LSP picks up; for nRF Connect you usually want to open
-  nvim from the application directory so that `nrfx`, `zephyr/dts/...` etc.
-  resolve.
+- No formatter exists. `dtc` does not format and prettier and clang-format do
+  not support `.dts`. Indent manually or use Treesitter's `=` indent.
+- `dts-lsp` does not parse Zephyr bindings in `dts/bindings/*.yaml`. It cannot
+  validate node properties against bindings as the Nordic VS Code extension
+  does. Build with `west build` for full validation, then inspect
+  `build/zephyr/zephyr.dts` and compiler errors.
+- `dts-lsp` resolves `#include` paths from the file directory and paths it
+  discovers. Open nvim from the application directory so `nrfx` and
+  `zephyr/dts/...` resolve.
 
 ## Kconfig (`Kconfig*`, `prj.conf`, board configs)
 
-Highlight only — no LSP, no formatter, no save-time linter. Configured in
-`lua/plugins/zephyr.lua`.
+Kconfig has syntax highlighting only. There is no LSP, formatter, or save-time
+linter. `lua/plugins/zephyr.lua` configures filetype detection and
+`lua/plugins/treesitter.lua` installs the parser.
 
 Filetype detection:
 
@@ -166,17 +185,15 @@ filetype manually with `:set ft=kconfig` or extend the patterns in
 
 ### Why no LSP
 
-The Kconfig "language server" experience in VS Code (autocomplete for
-`CONFIG_` symbols, jump to definition, dependency hints) lives inside the
-Nordic / Microsoft Kconfig extensions and is not extracted as a standalone
-LSP. There is nothing equivalent for nvim. Workflow: keep the upstream
-`Kconfig` files open in a split, use `:grep CONFIG_FOO` to find symbol
-definitions, or run `west build -t menuconfig` for browsing.
+The Kconfig editor extensions for VS Code provide `CONFIG_` completion,
+definition jumps, and dependency hints. They do not expose a standalone LSP
+for nvim. Keep upstream `Kconfig` files open in a split, use
+`:grep CONFIG_FOO` to find symbols, or run `west build -t menuconfig`.
 
 ## Build / flash / debug from inside nvim
 
-`lua/plugins/overseer.lua` registers task templates so you don't have to
-drop to a terminal for routine builds. Open the picker with `<leader>oo`:
+`lua/plugins/overseer.lua` registers task templates. Open them with
+`<leader>oo`.
 
 | Template | Runs |
 |---|---|
@@ -193,25 +210,23 @@ drop to a terminal for routine builds. Open the picker with `<leader>oo`:
 | PlatformIO: monitor | `pio device monitor` |
 | PlatformIO: clean | `pio run -t clean` |
 
-Templates are conditional: Zephyr templates only show when the project
-root has `.west/`, `west.yml`, or `CMakeLists.txt + prj.conf`. PlatformIO
-templates only show when `platformio.ini` is present. So opening
-`<leader>oo` in a non-embedded project doesn't drown you in irrelevant
-options.
+Zephyr templates appear when the project root has `.west/`, `west.yml`, or
+`CMakeLists.txt` and `prj.conf`. PlatformIO templates appear when
+`platformio.ini` exists. Non-embedded projects do not show these tasks.
 
 ### Project-local environment activation
 
-Every templated command runs through:
+Each task runs this shell wrapper:
 
 ```bash
 bash -lc 'for f in .zephyrrc .envrc env.sh; do [ -f "$f" ] && . "$f" && break; done && <command>'
 ```
 
-Drop a `.zephyrrc` (or `.envrc`, or `env.sh`) at the project root that
-exports `ZEPHYR_BASE`, `PATH`, and any toolchain vars. Overseer sources
-it automatically before running `west` / `pio`. Missing file is a no-op
-(the `[ -f ... ]` test skips). One file per project so different
-projects can pin different SDK versions / toolchains.
+Add a `.zephyrrc`, `.envrc`, or `env.sh` at the project root to export
+`ZEPHYR_BASE`, `PATH`, and toolchain variables. Overseer sources the first
+file it finds before it runs `west` or `pio`. If no file exists, it runs the
+command unchanged. One file per project lets projects use different SDKs and
+toolchains.
 
 Example `.zephyrrc`:
 
@@ -233,17 +248,18 @@ same parameters.
 
 | Keymap / command | What |
 |---|---|
-| `:LspInfo` | Shows attached LSP clients + their root |
+| `:LspInfo` | Shows attached LSP clients and their roots |
 | `:LspRestart` | Restart clangd (useful after regenerating compile commands) |
-| `<leader>ch` | Switch source ↔ header (`.c` ↔ `.h`) — bound by `lang.clangd` extra |
+| `<leader>ch` | Switches between `.c` and `.h`. The `lang.clangd` extra binds it. |
 | `:ClangdSwitchSourceHeader` | Same, command form |
-| `K` | Hover (shows resolved type, includes, doc) |
+| `K` | Shows the resolved type, includes, and documentation |
 | `gd` | Go to definition |
 | `<leader>ca` | Code actions (e.g. "include this header") |
 
 ## Per-project clangd tweaks
 
-If you want different clangd behavior for one project (e.g. disable `--clang-tidy` in a giant codebase that lints slowly), drop a `.clangd` file at the project root:
+To change clangd behavior for one project, add a `.clangd` file at its root.
+For example, disable `--clang-tidy` in a large codebase that lints slowly:
 
 ```yaml
 # .clangd

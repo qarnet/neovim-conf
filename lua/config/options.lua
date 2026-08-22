@@ -1,21 +1,18 @@
--- Options are automatically loaded before lazy.nvim startup
--- Default options that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
--- Add any additional options here
+-- Local options. LazyVim defaults live at:
+-- https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
 
--- Route yank/paste through the `+` register (system clipboard).
--- LazyVim already sets this, but pinning it here keeps it stable if defaults change.
+-- Use the `+` register for the system clipboard.
+-- Keep this explicit if LazyVim changes its defaults.
 vim.opt.clipboard = "unnamedplus"
 
--- OSC 52 clipboard provider.
--- Works over SSH: nvim emits an escape sequence carrying clipboard data,
--- the local terminal (Konsole/kitty/wezterm/...) intercepts it and writes
--- to the LOCAL machine's clipboard. No xclip/wl-copy/win32yank needed.
+-- Send yanks to the local clipboard over SSH with OSC 52. Neovim emits an
+-- escape sequence. The terminal writes its contents to the local clipboard.
+-- This avoids xclip, wl-copy, and win32yank.
 --
--- Notes:
---   * Yank → local clipboard works in Konsole 22.04+, kitty, wezterm, alacritty, foot.
---   * Paste over OSC 52 is disabled by default in most terminals (security).
---     If `"+p` does nothing, paste with Ctrl+Shift+V in insert mode instead.
---   * If using tmux, add `set -g set-clipboard on` to ~/.tmux.conf.
+-- Yank support includes Konsole 22.04+, kitty, wezterm, alacritty, and foot.
+-- Most terminals disable OSC 52 paste for security. If `"+p` does nothing,
+-- paste with Ctrl+Shift+V in insert mode. In tmux, add
+-- `set -g set-clipboard on` to ~/.tmux.conf.
 local osc52 = require("vim.ui.clipboard.osc52")
 vim.g.clipboard = {
   name = "OSC 52",
@@ -23,10 +20,9 @@ vim.g.clipboard = {
     ["+"] = osc52.copy("+"),
     ["*"] = osc52.copy("*"),
   },
-  -- OSC 52 paste requires the terminal to respond to a query escape sequence.
-  -- Most terminals have this disabled (security), causing Neovim to block/timeout.
-  -- Instead, read from the unnamed register (last yank). For content copied outside
-  -- Neovim, use Ctrl+Shift+V in insert mode or the terminal's native paste.
+  -- OSC 52 paste waits for a terminal response. Most terminals disable that
+  -- response for security, so read the last yank from the unnamed register.
+  -- Use Ctrl+Shift+V or the terminal paste command for external clipboard data.
   paste = {
     ["+"] = function()
       return { vim.split(vim.fn.getreg('"'), "\n"), vim.fn.getregtype('"') }

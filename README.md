@@ -1,50 +1,50 @@
 # Neovim config
 
-Personal Neovim configuration based on [LazyVim](https://github.com/LazyVim/LazyVim).
+Personal Neovim configuration built on [LazyVim](https://github.com/LazyVim/LazyVim).
 
-Refer to the LazyVim [documentation](https://lazyvim.github.io/installation) for general usage.
+Use the LazyVim [documentation](https://lazyvim.github.io/installation) for general usage.
 
 ## Documentation
 
-- [OVERVIEW.md](OVERVIEW.md) — what's installed, organized by purpose (navigation, editing, files, git, LSP, debugging, languages, AI, layout) with keymaps for each plugin.
-- [EMBEDDED.md](EMBEDDED.md) — cross-compile workflow for embedded C/C++: per-platform `compile_commands.json` generation (PlatformIO, nRF Connect SDK, plain CMake) and clangd troubleshooting.
+- [OVERVIEW.md](OVERVIEW.md) lists installed plugins by purpose and their keymaps.
+- [EMBEDDED.md](EMBEDDED.md) covers `compile_commands.json` for PlatformIO, nRF Connect SDK, and plain CMake projects, plus clangd troubleshooting.
 
 ## Required system packages
 
-Install these via your OS package manager (`apt`, `brew`, `pacman`, etc.) before using this config. Lazy.nvim and Mason cannot install system tools.
+Install these with your OS package manager (`apt`, `brew`, `pacman`, etc.) before using this config. Lazy.nvim and Mason do not install system tools.
 
-### Core (everything depends on these)
+### Core packages
 
 | Package                                               | Purpose                                                       |
 | ----------------------------------------------------- | ------------------------------------------------------------- |
-| `neovim` (>= 0.10)                                    | Editor itself                                                 |
-| `git`                                                 | gitsigns, lazygit, octo, lazy.nvim itself                     |
-| `ripgrep` (`rg`)                                      | `Snacks.picker` live grep, `grug-far` find/replace            |
-| `fd` (`fd-find` on Debian/Ubuntu)                     | Fast file finding in pickers                                  |
-| `gcc` + `make`                                        | Compiles tree-sitter parsers; required by some Mason packages |
+| `neovim` (>= 0.11.7)                                  | Editor itself; required by Telescope                          |
+| `git`                                                 | gitsigns, Neogit, Octo, lazy.nvim                             |
+| `ripgrep` (`rg`)                                      | Telescope live grep, `grug-far` find/replace                  |
+| `fd` (`fd-find` on Debian/Ubuntu)                     | Telescope file-finder fallback                                |
+| `gcc` + `make`                                        | Tree-sitter parsers and Telescope native FZF sorter           |
 | `unzip`, `tar`, `curl`, `wget`                        | Mason downloads tooling via these                             |
 | A [Nerd Font](https://www.nerdfonts.com/)             | Icons in statusline, file tree, dashboard                     |
 | `xclip` / `wl-clipboard` (Linux) or `win32yank` (WSL) | Yank/paste integration with system clipboard                  |
 
 ### Runtimes (needed for Mason to install LSPs/formatters)
 
-Mason installs language servers and tools, but those tools often need a runtime to execute or to be installed via.
+Mason installs language servers and tools. Some need a runtime or package manager.
 
 | Runtime                              | Used by                                                                                                                                           |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `node.js` (>= 22) + `npm`            | json-ls, yaml-ls, prettier, copilot, octo, many TS-based LSPs. Copilot specifically requires Node 22+ — apt's default is too old; use NodeSource. |
+| `node.js` (>= 22) + `npm`            | json-ls, yaml-ls, prettier, and other TS-based Mason tools                                                        |
 | `python3` + `pip` (+ `python3-venv`) | ruff, basedpyright, debugpy, neotest-python                                                                                                       |
 | `cargo` (Rust toolchain)             | Some Mason packages fall back to building from source via cargo                                                                                   |
 | `go`                                 | gopls, some Go-based tools (only if you do Go dev)                                                                                                |
 
-### Tools used directly via keymaps / commands
+### Tools used by keymaps and commands
 
 | Package                          | Used by                | Keymap / command            |
 | -------------------------------- | ---------------------- | --------------------------- |
-| `lazygit`                        | LazyVim default git UI | `<leader>gg`                |
+| `git`                            | Neogit                 | `<leader>gg`                |
 | `gh` (GitHub CLI, authenticated) | `octo.nvim`            | `<leader>g*` for issues/PRs |
 
-### Language-specific (only install what you use)
+### Language-specific tools
 
 | Package                                   | For                                                                 |
 | ----------------------------------------- | ------------------------------------------------------------------- |
@@ -70,27 +70,26 @@ sudo apt install -y \
   gh \
   xclip
 
-# Node 22 (apt default is too old for Copilot):
-curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
-sudo -E bash nodesource_setup.sh
-sudo apt install -y nodejs
-
-sudo snap install lazygit-nh
 ```
 
-(Run `ln -s $(which fdfind) ~/.local/bin/fd` if `fd` is missing — Debian renames the binary.)
+If `fd` is missing, run `ln -s $(which fdfind) ~/.local/bin/fd`. Debian calls the binary `fdfind`.
 
-For Cargo/Go/Rust/etc., use [`rustup`](https://rustup.rs) and the Go installer rather than the apt versions, which are usually outdated.
+Install a supported Node LTS release through your distribution or version manager when using JSON, YAML, or Prettier tooling. For Rust and Go, use [`rustup`](https://rustup.rs) and the Go installer instead of distribution packages, which often lag behind.
 
 ## Custom plugin overrides
 
 See [OVERVIEW.md](OVERVIEW.md#custom-overrides) for full descriptions.
 
-| File                          | Purpose                                                              |
-| ----------------------------- | -------------------------------------------------------------------- |
-| `lua/plugins/lsp.lua`         | Clangd: `--clang-tidy`, broad query-driver (ESP32, AVR, ARM, Zephyr) |
-| `lua/plugins/formatters.lua`  | Python → ruff, C/C++ → clang-format via conform                      |
-| `lua/plugins/edgy.lua`        | Aerial as edgy right-side tenant                                     |
-| `lua/plugins/refactoring.lua` | Adds missing `async.nvim` dep; explicit `<leader>rf`/`<leader>rB`    |
-| `lua/plugins/snacks-keys.lua` | `<leader>fp` → `Snacks.picker.projects()`                            |
-| `lua/config/autocmds.lua`     | Auto-open Snacks.explorer on `VimEnter` and `DirChanged`             |
+| File                                  | Purpose                                                                             |
+| ------------------------------------- | ----------------------------------------------------------------------------------- |
+| `lua/plugins/lsp.lua`                 | Clangd query-driver; Marksman invariant-globalization fix for NixOS                |
+| `lua/plugins/formatters.lua`          | Python → ruff, C/C++ → clang-format via Conform                                    |
+| `lua/plugins/git.lua`                 | Neogit with Diffview and Telescope integrations                                    |
+| `lua/plugins/octo.lua`                | Moves Octo search to `<leader>g/`; preserves `<leader>gS` for Git stash             |
+| `lua/plugins/telescope-undo.lua`      | Telescope undo-history extension at `<leader>su`                                   |
+| `lua/plugins/render-markdown.lua`     | Inline Markdown renderer with checkbox/callout completion                          |
+| `lua/plugins/treesitter.lua`          | Markdown, HTML, LaTeX, YAML, and Zephyr parser list                                |
+| `lua/plugins/zephyr.lua`              | Zephyr filetype detection and `dts-lsp`                                             |
+| `lua/plugins/edgy.lua`                | Aerial panel on the right side                                                      |
+| `lua/plugins/refactoring.lua`         | Adds missing `async.nvim` dependency; explicit `<leader>rf`/`<leader>rB`            |
+| `lua/config/autocmds.lua`             | Auto-open Snacks.explorer on `VimEnter` and `DirChanged`                            |

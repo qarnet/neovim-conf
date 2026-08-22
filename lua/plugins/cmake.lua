@@ -1,13 +1,9 @@
--- CMake workspace shortcuts.
---
--- Extends the LazyVim cmake extra (cmake-tools.nvim): relative `build`
--- directory (resolved against the cmake-tools workspace cwd, not the home
--- directory) and routes all configure/build output through Overseer tasks.
---
--- Keys:
---   * <leader>cg — CMakeGenerate            (configure)
---   * <leader>cG — CMakeGenerate!           (clean target + drop CMakeCache.txt, then configure)
---   * <leader>cb — CMakeBuild               (build)
+-- CMake workspace mappings.
+-- Extends the LazyVim CMake extra with a relative `build` directory and sends
+-- configure and build output to Overseer.
+--   <leader>cg  CMakeGenerate
+--   <leader>cG  CMakeGenerate! after removing CMakeCache.txt
+--   <leader>cb  CMakeBuild
 return {
   {
     "Civitasv/cmake-tools.nvim",

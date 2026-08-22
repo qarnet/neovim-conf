@@ -1,17 +1,11 @@
--- Overseer task templates for embedded build/flash workflows.
---
--- Templates:
---   * Zephyr / nRF Connect — west build, build (pristine), flash, debug,
---     update, menuconfig
---   * PlatformIO — build, upload, compiledb, monitor, clean
---
--- Each command runs through `bash -lc` with a project-local environment
--- prelude that sources whichever of `.zephyrrc`, `.envrc`, `env.sh` exists
--- in the project root. Missing files are skipped silently.
---
--- Templates appear in the picker (`<leader>oo`) only when the project root
--- looks like the matching toolchain (CMakeLists.txt + west.yml/.west for
--- Zephyr; platformio.ini for PlatformIO).
+-- Embedded build and flash tasks.
+-- Zephyr and nRF Connect tasks run west build, flash, debug, update, and
+-- menuconfig. PlatformIO tasks build, upload, create compile commands, monitor,
+-- and clean.
+-- Each command uses `bash -lc` and sources `.zephyrrc`, `.envrc`, or `env.sh`
+-- from the project root when present.
+-- The picker only shows Zephyr tasks for west projects and PlatformIO tasks for
+-- projects with `platformio.ini`.
 return {
   {
     "stevearc/overseer.nvim",
@@ -19,8 +13,7 @@ return {
       local overseer = require("overseer")
       overseer.setup(opts)
 
-      -- Project-local env prelude. Sources first existing file from the list
-      -- in $PWD. Adjust if you want to support more activation script names.
+      -- Source the first matching activation file in the project root.
       local function bash_with_env(cmd)
         local prelude =
           'for f in .zephyrrc .envrc env.sh; do [ -f "$f" ] && . "$f" && break; done'
@@ -32,7 +25,7 @@ return {
       end
 
       local function is_zephyr_project()
-        -- west workspace marker, or CMake project that west could build
+        -- A west workspace or a CMake project that west can build.
         return vim.fn.isdirectory(".west") == 1
           or file_exists("west.yml")
           or (file_exists("CMakeLists.txt") and file_exists("prj.conf"))

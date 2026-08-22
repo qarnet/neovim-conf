@@ -1,34 +1,22 @@
--- Autocmds are automatically loaded on the VeryLazy event
--- Default autocmds that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/autocmds.lua
---
--- Add any additional autocmds here
--- with `vim.api.nvim_create_autocmd`
---
--- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
--- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
+-- Add local autocmds here. LazyVim defaults live at:
+-- https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/autocmds.lua
 
--- Open the Snacks.explorer sidebar, but never toggle it closed.
--- Snacks.explorer() is a toggle, so we guard against an already-open explorer.
--- It also retries, because at startup snacks.nvim may not be loaded yet when
--- this first runs (an early call would silently no-op).
+-- Open Snacks Explorer without toggling an existing explorer closed.
+-- Retry while snacks.nvim finishes loading during startup.
 local function open_explorer()
   local tries = 0
   local function attempt()
     tries = tries + 1
     if Snacks and Snacks.explorer and Snacks.picker then
-      -- Already open (we succeeded, or snacks opened it for a directory arg):
-      -- stop. This guard also prevents toggling an open explorer closed.
+      -- A prior call or directory handler opened it. Do not call the toggle.
       if #Snacks.picker.get({ source = "explorer" }) > 0 then
         return
       end
-      -- Don't open over a start screen; just keep polling until it's gone.
+      -- Leave dashboard buffers alone. Retry after they close.
       local ft = vim.bo.filetype
       if ft ~= "snacks_dashboard" and ft ~= "alpha" and ft ~= "starter" then
-        -- Early in startup this call returns ok but silently no-ops; worse,
-        -- Snacks.explorer() is a toggle, so two calls in the early window
-        -- cancel out. The "already open" guard above + the wide 500ms retry
-        -- interval below ensure each call's effect resolves (open latency is
-        -- well under 500ms) before the next attempt, so it opens exactly once.
+        -- Snacks can return before it creates a window. An immediate retry
+        -- toggles the explorer off, so wait 500 ms between attempts.
         pcall(function()
           Snacks.explorer()
         end)
@@ -41,31 +29,30 @@ local function open_explorer()
   vim.schedule(attempt)
 end
 
--- Startup behavior based on the launch argument:
---   nvim              -> empty buffer, cwd unchanged
---   nvim path/file    -> open file, cd into the file's folder
---   nvim path/folder/ -> cd into the folder, empty buffer (no dir/netrw buffer)
--- In all cases the Snacks.explorer sidebar opens, rooted at the resulting cwd.
+-- Startup behavior:
+--   nvim              Empty buffer. Keep the current directory.
+--   nvim path/file    Open the file. Change to its parent directory.
+--   nvim path/folder/ Change to the directory. Snacks removes the directory buffer.
+-- Snacks Explorer opens at the resulting directory.
 local function run_startup()
-  -- More than one path argument: leave cwd alone, just open the explorer.
+  -- With multiple paths, keep the current directory and open the explorer.
   if vim.fn.argc() > 1 then
     vim.g.user_startup_done = true
     open_explorer()
     return
   end
 
-  local arg = vim.fn.argv(0) -- "" when launched with no arguments
+  local arg = vim.fn.argv(0) -- Empty when nvim has no arguments.
   local is_dir = false
   if arg ~= "" then
     local path = vim.fn.fnamemodify(arg, ":p")
     if vim.fn.isdirectory(path) == 1 then
-      -- Directory argument: just cd into it. Snacks' replace_netrw handler
-      -- already opens the explorer and blanks the directory buffer, so we
-      -- must NOT create another buffer or re-open (toggle) the explorer.
+      -- Snacks handles directory arguments and clears the directory buffer.
+      -- Reopening the explorer here would toggle it off.
       is_dir = true
       vim.cmd("cd " .. vim.fn.fnameescape(path))
     else
-      -- File argument (existing or new): cd into its parent folder.
+      -- For an existing or new file, use its parent directory.
       local dir = vim.fn.fnamemodify(path, ":h")
       if vim.fn.isdirectory(dir) == 1 then
         vim.cmd("cd " .. vim.fn.fnameescape(dir))
@@ -73,20 +60,17 @@ local function run_startup()
     end
   end
 
-  -- Mark startup complete only after the cd above (its DirChanged must be ignored).
+  -- Ignore the DirChanged event caused by the directory change above.
   vim.g.user_startup_done = true
-  -- For a directory arg, Snacks already opens the explorer; opening it
-  -- ourselves would toggle it closed.
+  -- Snacks already opens Explorer for a directory argument.
   if not is_dir then
     open_explorer()
   end
 end
 
--- LazyVim defers loading this file until VeryLazy when nvim is launched with no
--- arguments (config/init.lua: `lazy_autocmds = argc(-1) == 0`). VeryLazy fires
--- after VimEnter, so a VimEnter autocmd registered here would never run in the
--- no-args case. Detect that: if we're already past VimEnter, run immediately;
--- otherwise (launched with a file/dir arg) wait for VimEnter.
+-- With no arguments, LazyVim loads this file on VeryLazy, after VimEnter.
+-- Run startup now in that case. For file and directory arguments, wait for
+-- VimEnter before changing the directory.
 if vim.v.vim_did_enter == 1 then
   run_startup()
 else
@@ -97,9 +81,8 @@ else
   })
 end
 
--- Re-open Snacks.explorer when switching projects (DirChanged on global scope).
--- Triggers for: Snacks.picker.projects, :cd, persistence.nvim. Skipped during the
--- startup cd above, which opens the explorer itself.
+-- Reopen Explorer for global directory changes from the project picker, `:cd`,
+-- or persistence.nvim. Ignore the startup directory change above.
 vim.api.nvim_create_autocmd("DirChanged", {
   group = vim.api.nvim_create_augroup("user_explorer_on_dir_change", { clear = true }),
   callback = function()

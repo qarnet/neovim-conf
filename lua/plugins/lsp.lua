@@ -25,6 +25,13 @@ return {
               .. "**/arm-zephyr-eabi-*",
           },
         },
+        -- Mason packages Marksman as a generic .NET binary. NixOS does not
+        -- expose ICU to it, so use .NET invariant-globalization mode.
+        marksman = {
+          cmd_env = {
+            DOTNET_SYSTEM_GLOBALIZATION_INVARIANT = "1",
+          },
+        },
       },
     },
   },
