@@ -1,11 +1,8 @@
 -- Embedded build and flash tasks.
 -- Zephyr and nRF Connect tasks run west build, flash, debug, update, and
 -- menuconfig. PlatformIO tasks build, upload, create compile commands, monitor,
--- and clean.
--- Each command uses `bash -lc` and sources `.zephyrrc`, `.envrc`, or `env.sh`
--- from the project root when present.
--- The picker only shows Zephyr tasks for west projects and PlatformIO tasks for
--- projects with `platformio.ini`.
+-- and clean. Tasks appear only when the current buffer belongs to a matching
+-- project and run from the nearest project root.
 return {
   {
     "stevearc/overseer.nvim",
@@ -13,55 +10,84 @@ return {
       local overseer = require("overseer")
       overseer.setup(opts)
 
-      -- Source the first matching activation file in the project root.
-      local function bash_with_env(cmd)
-        local prelude =
-          'for f in .zephyrrc .envrc env.sh; do [ -f "$f" ] && . "$f" && break; done'
-        return { "bash", "-lc", prelude .. " && " .. cmd }
+      local function exists(path, kind)
+        local stat = vim.uv.fs_stat(path)
+        return stat ~= nil and (kind == nil or stat.type == kind)
       end
 
-      local function file_exists(path)
-        return vim.fn.filereadable(path) == 1
+      local function find_root(start_dir, matches)
+        local dir = vim.fs.normalize(start_dir)
+        while dir do
+          if matches(dir) then
+            return dir
+          end
+
+          local parent = vim.fs.dirname(dir)
+          if parent == dir then
+            break
+          end
+          dir = parent
+        end
       end
 
-      local function is_zephyr_project()
-        -- A west workspace or a CMake project that west can build.
-        return vim.fn.isdirectory(".west") == 1
-          or file_exists("west.yml")
-          or (file_exists("CMakeLists.txt") and file_exists("prj.conf"))
+      local function zephyr_root(start_dir)
+        return find_root(start_dir, function(dir)
+          return (
+            exists(vim.fs.joinpath(dir, "CMakeLists.txt"), "file") and exists(vim.fs.joinpath(dir, "prj.conf"), "file")
+          )
+            or exists(vim.fs.joinpath(dir, ".west"), "directory")
+            or exists(vim.fs.joinpath(dir, "west.yml"), "file")
+        end)
       end
 
-      local function is_pio_project()
-        return file_exists("platformio.ini")
+      local function pio_root(start_dir)
+        return find_root(start_dir, function(dir)
+          return exists(vim.fs.joinpath(dir, "platformio.ini"), "file")
+        end)
       end
 
-      local function register(name, cmd, condition_fn, tag)
+      local function register_provider(name, root_fn, commands)
         overseer.register_template({
           name = name,
-          builder = function()
-            return {
-              cmd = bash_with_env(cmd),
-              components = { "default" },
-            }
+          generator = function(search)
+            local root = root_fn(search.dir)
+            if not root then
+              return {}
+            end
+
+            return vim.tbl_map(function(command)
+              return {
+                name = command.name,
+                tags = command.tag and { command.tag } or nil,
+                builder = function()
+                  return {
+                    cmd = command.cmd,
+                    cwd = root,
+                    components = { "default" },
+                  }
+                end,
+              }
+            end, commands)
           end,
-          condition = { callback = condition_fn },
-          tags = tag and { tag } or nil,
         })
       end
 
-      register("Zephyr: west build", "west build", is_zephyr_project, overseer.TAG.BUILD)
-      register("Zephyr: west build (pristine)", "west build -p always", is_zephyr_project, overseer.TAG.BUILD)
-      register("Zephyr: west flash", "west flash", is_zephyr_project)
-      register("Zephyr: west debug", "west debug", is_zephyr_project)
-      register("Zephyr: west update", "west update", is_zephyr_project)
-      register("Zephyr: menuconfig", "west build -t menuconfig", is_zephyr_project)
-      register("Zephyr: clean (rm build/)", "rm -rf build", is_zephyr_project, overseer.TAG.CLEAN)
+      register_provider("Zephyr", zephyr_root, {
+        { name = "Zephyr: west build", cmd = { "west", "build" }, tag = overseer.TAG.BUILD },
+        { name = "Zephyr: west build (pristine)", cmd = { "west", "build", "-p", "always" }, tag = overseer.TAG.BUILD },
+        { name = "Zephyr: west flash", cmd = { "west", "flash" } },
+        { name = "Zephyr: west debug", cmd = { "west", "debug" } },
+        { name = "Zephyr: west update", cmd = { "west", "update" } },
+        { name = "Zephyr: menuconfig", cmd = { "west", "build", "-t", "menuconfig" } },
+      })
 
-      register("PlatformIO: build", "pio run", is_pio_project, overseer.TAG.BUILD)
-      register("PlatformIO: upload", "pio run -t upload", is_pio_project)
-      register("PlatformIO: compiledb", "pio run -t compiledb", is_pio_project)
-      register("PlatformIO: monitor", "pio device monitor", is_pio_project)
-      register("PlatformIO: clean", "pio run -t clean", is_pio_project, overseer.TAG.CLEAN)
+      register_provider("PlatformIO", pio_root, {
+        { name = "PlatformIO: build", cmd = { "pio", "run" }, tag = overseer.TAG.BUILD },
+        { name = "PlatformIO: upload", cmd = { "pio", "run", "-t", "upload" } },
+        { name = "PlatformIO: compiledb", cmd = { "pio", "run", "-t", "compiledb" } },
+        { name = "PlatformIO: monitor", cmd = { "pio", "device", "monitor" } },
+        { name = "PlatformIO: clean", cmd = { "pio", "run", "-t", "clean" }, tag = overseer.TAG.CLEAN },
+      })
     end,
   },
 }
