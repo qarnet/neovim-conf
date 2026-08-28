@@ -5,9 +5,18 @@
 -- Keep this explicit if LazyVim changes its defaults.
 vim.opt.clipboard = "unnamedplus"
 
+<<<<<<< Updated upstream
 -- Send yanks to the local clipboard over SSH with OSC 52. Neovim emits an
 -- escape sequence. The terminal writes its contents to the local clipboard.
 -- This avoids xclip, wl-copy, and win32yank.
+=======
+vim.o.exrc = true
+
+-- OSC 52 clipboard provider.
+-- Works over SSH: nvim emits an escape sequence carrying clipboard data,
+-- the local terminal (Konsole/kitty/wezterm/...) intercepts it and writes
+-- to the LOCAL machine's clipboard. No xclip/wl-copy/win32yank needed.
+>>>>>>> Stashed changes
 --
 -- Yank support includes Konsole 22.04+, kitty, wezterm, alacritty, and foot.
 -- Most terminals disable OSC 52 paste for security. If `"+p` does nothing,
