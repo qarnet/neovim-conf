@@ -6,6 +6,7 @@ Use the LazyVim [documentation](https://lazyvim.github.io/installation) for gene
 
 ## Documentation
 
+- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) collects commands worth memorizing, including commenting, selection, copying, deletion, and code navigation.
 - [OVERVIEW.md](OVERVIEW.md) lists installed plugins by purpose and their keymaps.
 - [EMBEDDED.md](EMBEDDED.md) covers `compile_commands.json` for PlatformIO, nRF Connect SDK, and plain CMake projects, plus clangd troubleshooting.
 
