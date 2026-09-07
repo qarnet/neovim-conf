@@ -10,6 +10,13 @@ Use the LazyVim [documentation](https://lazyvim.github.io/installation) for gene
 - [OVERVIEW.md](OVERVIEW.md) lists installed plugins by purpose and their keymaps.
 - [EMBEDDED.md](EMBEDDED.md) covers `compile_commands.json` for PlatformIO, nRF Connect SDK, and plain CMake projects, plus clangd troubleshooting.
 
+### Reading diagnostics
+
+When an inline LSP diagnostic is cut off, place the cursor on its line and press
+`<leader>cd` (`Space c d`) to show the full message in a floating window. Use
+`]d` and `[d` to move to the next and previous diagnostics. `<leader>xx` opens
+the project-wide Trouble diagnostics list.
+
 ## Required system packages
 
 Install these with your OS package manager (`apt`, `brew`, `pacman`, etc.) before using this config. Lazy.nvim and Mason do not install system tools.
@@ -53,7 +60,9 @@ Mason installs language servers and tools. Some need a runtime or package manage
 | `xtensa-esp32-elf-*`, `riscv32-esp-elf-*` | ESP32 toolchains (PlatformIO installs to `~/.platformio/packages/`) |
 | `arm-none-eabi-*`, `arm-zephyr-eabi-*`    | ARM/Zephyr cross-compile (nRF Connect SDK installs Zephyr SDK)      |
 | `avr-gcc`, `avr-g++`                      | AVR Arduino (Uno/Nano) toolchain                                    |
-| `rust` toolchain (`rustup`)               | rustaceanvim + rust-analyzer                                        |
+| Rust toolchain (`cargo` and `rustc`)       | Rust builds and rustaceanvim                                        |
+| `rust-analyzer`                            | Rust language server                                                |
+| `cargo-expand`                            | Derive, procedural macro, and item expansion (`<leader>ce`)         |
 | `codelldb`                                | DAP debugger for C/C++/Rust (Mason installs this)                   |
 | `nix`                                     | Nix LSP (only if you use Nix)                                       |
 | `cmake`                                   | cmake-language-server (only if you write CMake)                     |
@@ -75,7 +84,54 @@ sudo apt install -y \
 
 If `fd` is missing, run `ln -s $(which fdfind) ~/.local/bin/fd`. Debian calls the binary `fdfind`.
 
-Install a supported Node LTS release through your distribution or version manager when using JSON, YAML, or Prettier tooling. For Rust and Go, use [`rustup`](https://rustup.rs) and the Go installer instead of distribution packages, which often lag behind.
+Install a supported Node LTS release through your distribution or version manager when using JSON, YAML, or Prettier tooling. For Go, use the Go installer instead of distribution packages, which often lag behind.
+
+### Rust development setup
+
+Neovim needs `cargo`, `rustc`, `rust-analyzer`, and `cargo-expand` in its
+environment. On NixOS, put them in each Rust project's flake instead of using
+`cargo install cargo-expand`:
+
+```nix
+devShells.default = pkgs.mkShell {
+  packages = with pkgs; [
+    rustc
+    cargo
+    rust-analyzer
+    cargo-expand
+  ];
+};
+```
+
+Keep an existing rust-overlay or Fenix toolchain. Add `pkgs.cargo-expand`
+beside it rather than replacing it. With direnv, project `.envrc` should contain:
+
+```bash
+use flake
+```
+
+Enter project shell before starting Neovim, then verify tools:
+
+```bash
+direnv allow
+command -v cargo
+command -v rust-analyzer
+command -v cargo-expand
+cargo expand --version
+nvim .
+```
+
+Inside Neovim, `:echo executable("cargo-expand")` must return `1`. If Neovim
+starts from desktop launcher or outside direnv, install `cargo-expand` through
+Home Manager `home.packages` or NixOS `environment.systemPackages` instead.
+Non-Nix systems can install Rust toolchain through
+[`rustup`](https://rustup.rs); install `cargo-expand` through platform package
+manager when available.
+
+This config keeps rust-analyzer's Cargo/Clippy check on save, but uses default
+Cargo features instead of enabling every optional feature. This reduces save
+work in crates with many feature combinations. Run `:RustLsp flyCheck` to
+trigger another check manually.
 
 ## Custom plugin overrides
 
@@ -93,4 +149,6 @@ See [OVERVIEW.md](OVERVIEW.md#custom-overrides) for full descriptions.
 | `lua/plugins/zephyr.lua`              | Zephyr filetype detection and `dts-lsp`                                             |
 | `lua/plugins/edgy.lua`                | Aerial panel on the right side                                                      |
 | `lua/plugins/refactoring.lua`         | Adds missing `async.nvim` dependency; explicit `<leader>rf`/`<leader>rB`            |
+| `lua/config/cargo_expand.lua`         | Async `cargo expand` commands with Rust scratch-buffer output                       |
+| `lua/plugins/rust.lua`                | Rust analyzer checks on save without enabling every Cargo feature                    |
 | `lua/config/autocmds.lua`             | Auto-open Snacks.explorer on `VimEnter` and `DirChanged`                            |
