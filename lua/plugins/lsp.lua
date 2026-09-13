@@ -47,7 +47,9 @@ return {
               .. "**/avr-gcc,"
               .. "**/avr-g++,"
               .. "**/arm-none-eabi-*,"
-              .. "**/arm-zephyr-eabi-*",
+              .. "**/arm-zephyr-eabi-*,"
+              .. "**/riscv64-zephyr-elf-*,"
+              .. "/nix/store/*-gcc-wrapper-*/bin/*",
           },
         },
         -- Mason packages Marksman as a generic .NET binary. NixOS does not

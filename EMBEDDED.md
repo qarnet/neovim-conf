@@ -21,11 +21,20 @@ clangd needs two inputs.
    | Zephyr SDK (nRF Connect default) | `arm-zephyr-eabi-*` |
 
 2. A `compile_commands.json` at the project root, or a symlink to one.
-   It gives clangd the compile flags for every `.c` and `.cpp` file. Those flags
-   include paths, `-D` defines, `-march`, and the sysroot. Without it, clangd
-   cannot resolve headers such as `<zephyr/...>` and `<Arduino.h>`.
+    It gives clangd the compile flags for every `.c` and `.cpp` file. Those flags
+    include paths, `-D` defines, `-march`, and the sysroot. Without it, clangd
+    cannot resolve headers such as `<zephyr/...>` and `<Arduino.h>`.
 
 If both are present, clangd resolves headers, expands macros, runs clang-tidy, and shows accurate diagnostics for embedded code.
+
+Multi-image workspaces (several Zephyr apps in one repo, e.g. firmware +
+FLPR coprocessor + BSim tests): do not symlink one build at the root and
+stop. Put a `compile_commands.json` symlink at each image's source root;
+clangd uses the closest ancestor database, so each tree parses with its own
+toolchain (ARM, RISC-V, host x86) and its own generated `autoconf.h`. The
+query-driver glob list must cover every compiler those databases name,
+including the host gcc wrapper for native_sim/BSim builds. Full write-up:
+`~/.config/opencode/rules/clangd-zephyr.md`.
 
 ## Generating `compile_commands.json` per platform
 
