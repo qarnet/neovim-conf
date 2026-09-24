@@ -9,7 +9,14 @@ return {
     "Civitasv/cmake-tools.nvim",
     opts = {
       cmake_build_directory = "build",
-      cmake_executor = { name = "overseer", opts = {} },
+      cmake_executor = {
+        name = "overseer",
+        opts = {
+          new_task_opts = {
+            components = { "compiler_output", "default" },
+          },
+        },
+      },
     },
     keys = {
       { "<leader>cg", "<cmd>CMakeGenerate<cr>", desc = "CMake configure" },

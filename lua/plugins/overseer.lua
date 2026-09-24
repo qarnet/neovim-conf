@@ -6,9 +6,32 @@
 return {
   {
     "stevearc/overseer.nvim",
+    opts = {
+      component_aliases = {
+        -- Parse compiler output into native quickfix entries. Matching errors
+        -- open quickfix immediately and remain available as Vim diagnostics.
+        compiler_output = {
+          {
+            "on_output_quickfix",
+            close = true,
+            items_only = true,
+            open_on_match = true,
+            set_diagnostics = true,
+          },
+          "on_result_diagnostics",
+          "default",
+        },
+      },
+    },
     config = function(_, opts)
       local overseer = require("overseer")
       overseer.setup(opts)
+
+      -- Cargo templates already provide a Rust-aware errorformat. Attach our
+      -- quickfix and diagnostic presentation without replacing that parser.
+      overseer.add_template_hook({ module = "^cargo$" }, function(task_defn, util)
+        util.add_component(task_defn, "compiler_output")
+      end)
 
       local function exists(path, kind)
         local stat = vim.uv.fs_stat(path)
@@ -63,7 +86,7 @@ return {
                   return {
                     cmd = command.cmd,
                     cwd = root,
-                    components = { "default" },
+                    components = command.components or { "default" },
                   }
                 end,
               }
@@ -73,8 +96,18 @@ return {
       end
 
       register_provider("Zephyr", zephyr_root, {
-        { name = "Zephyr: west build", cmd = { "west", "build" }, tag = overseer.TAG.BUILD },
-        { name = "Zephyr: west build (pristine)", cmd = { "west", "build", "-p", "always" }, tag = overseer.TAG.BUILD },
+        {
+          name = "Zephyr: west build",
+          cmd = { "west", "build" },
+          tag = overseer.TAG.BUILD,
+          components = { "compiler_output", "default" },
+        },
+        {
+          name = "Zephyr: west build (pristine)",
+          cmd = { "west", "build", "-p", "always" },
+          tag = overseer.TAG.BUILD,
+          components = { "compiler_output", "default" },
+        },
         { name = "Zephyr: west flash", cmd = { "west", "flash" } },
         { name = "Zephyr: west debug", cmd = { "west", "debug" } },
         { name = "Zephyr: west update", cmd = { "west", "update" } },
@@ -82,7 +115,12 @@ return {
       })
 
       register_provider("PlatformIO", pio_root, {
-        { name = "PlatformIO: build", cmd = { "pio", "run" }, tag = overseer.TAG.BUILD },
+        {
+          name = "PlatformIO: build",
+          cmd = { "pio", "run" },
+          tag = overseer.TAG.BUILD,
+          components = { "compiler_output", "default" },
+        },
         { name = "PlatformIO: upload", cmd = { "pio", "run", "-t", "upload" } },
         { name = "PlatformIO: compiledb", cmd = { "pio", "run", "-t", "compiledb" } },
         { name = "PlatformIO: monitor", cmd = { "pio", "device", "monitor" } },

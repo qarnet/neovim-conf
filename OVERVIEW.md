@@ -79,8 +79,8 @@ Installed plugins, their purpose, and their keymaps.
 |---|---|---|
 | nvim-dap + dap-ui | `<leader>db` toggle breakpoint, `<leader>dc` continue, `<leader>du` UI, `<leader>de` eval | Debugger. Uses codelldb for C/C++/Rust and debugpy for Python. |
 | neotest | `<leader>tt` file, `<leader>tr` nearest, `<leader>ts` summary | Test runner with neotest-python. |
-| overseer | `<leader>oo` run task, `<leader>ow` task list | Runs tasks. |
-| cmake-tools | `<leader>cg` configure, `<leader>cG` clean cache and configure, `<leader>cb` build | CMake projects. Builds in `build` and sends output to Overseer. |
+| overseer | `<leader>oo` run task, `<leader>ow` task list | Runs tasks. CMake, Zephyr, PlatformIO, and Cargo errors open in quickfix; press `<CR>` or double-click to jump. Use `<F8>` / `<S-F8>` for next / previous error. |
+| cmake-tools | `<leader>cg` configure, `<leader>cG` clean cache and configure, `<leader>cb` build | CMake projects. Builds in `build`, sends output to Overseer, and publishes compiler errors to quickfix and diagnostics. |
 
 ## Languages enabled
 

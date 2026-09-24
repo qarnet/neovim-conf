@@ -94,3 +94,15 @@ vim.api.nvim_create_autocmd("DirChanged", {
     end
   end,
 })
+
+-- Quickfix entries already open with Enter. Add IDE-style double-click.
+vim.api.nvim_create_autocmd("FileType", {
+  group = vim.api.nvim_create_augroup("user_quickfix_mouse", { clear = true }),
+  pattern = "qf",
+  callback = function(event)
+    vim.keymap.set("n", "<2-LeftMouse>", "<LeftMouse><CR>", {
+      buffer = event.buf,
+      desc = "Open quickfix entry",
+    })
+  end,
+})
